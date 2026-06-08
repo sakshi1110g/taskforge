@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: taskforge-api
+    env: node
+    buildCommand: cd server && npm install
+    startCommand: cd server && npm start
+    envVars:
+      - key: JWT_SECRET
+        generateValue: true
+      - key: NODE_ENV
+        value: production
+      - key: CLIENT_URL
+        value: https://taskforge-ui.onrender.com
+
+  - type: web
+    name: taskforge-ui
+    env: static
+    buildCommand: cd client && npm install && npm run build
+    staticPublishPath: client/build
+    envVars:
+      - key: REACT_APP_API_URL
+        value: https://taskforge-api.onrender.com
