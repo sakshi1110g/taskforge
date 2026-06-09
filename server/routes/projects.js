@@ -8,18 +8,16 @@ router.get('/', auth, async (req, res) => {
   try {
     let projects;
     if (req.user.role === 'Admin') {
-      projects = await Project.find().populate('memberIds', 'id name email role avatar');
+      projects = await Project.find().populate('memberIds', '_id name email role avatar');
     } else {
-      projects = await Project.find({ memberIds: req.user.id }).populate('memberIds', 'id name email role avatar');
+      projects = await Project.find({ memberIds: req.user.id }).populate('memberIds', '_id name email role avatar');
     }
-    // Attach members array for frontend compatibility
-    const result = projects.map(p => ({
-      ...p.toObject(),
-      id: p._id,
-      members: p.memberIds
-    }));
+    const result = projects.map(p => {
+      const obj = p.toObject();
+      return { ...obj, id: p._id.toString(), members: obj.memberIds.map(m => ({...m, id: m._id.toString()})) };
+    });
     res.json(result);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { console.error(e); res.status(500).json({ error: e.message }); }
 });
 
 // POST /api/projects
@@ -27,11 +25,18 @@ router.post('/', auth, adminOnly, async (req, res) => {
   try {
     const { name, description, color, memberIds } = req.body;
     if (!name) return res.status(400).json({ error: 'Name required' });
-    const ids = [...new Set([req.user.id, ...(memberIds || [])])];
-    const project = await Project.create({ name, description, color, ownerId: req.user.id, memberIds: ids });
-    const full = await Project.findById(project._id).populate('memberIds', 'id name email role avatar');
-    res.status(201).json({ ...full.toObject(), id: full._id, members: full.memberIds });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+    
+    // Combine current user + provided memberIds, filter out invalid ones
+    const rawIds = [req.user.id, ...(memberIds || [])];
+    // Validate all IDs exist in DB
+    const validUsers = await User.find({ _id: { $in: rawIds } }).select('_id');
+    const validIds = validUsers.map(u => u._id);
+
+    const project = await Project.create({ name, description, color, ownerId: req.user.id, memberIds: validIds });
+    const full = await Project.findById(project._id).populate('memberIds', '_id name email role avatar');
+    const obj = full.toObject();
+    res.status(201).json({ ...obj, id: full._id.toString(), members: obj.memberIds.map(m => ({...m, id: m._id.toString()})) });
+  } catch (e) { console.error(e); res.status(500).json({ error: e.message }); }
 });
 
 // DELETE /api/projects/:id
