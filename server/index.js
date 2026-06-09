@@ -13,6 +13,7 @@ app.use('/api/auth',     require('./routes/auth'));
 app.use('/api/projects', require('./routes/projects'));
 app.use('/api/tasks',    require('./routes/tasks'));
 app.use('/api/users',    require('./routes/users'));
+app.use('/api/seed',     require('./routes/seed'));
 
 app.get('/', (req, res) => res.json({ message: 'TaskForge API running ✅' }));
 
