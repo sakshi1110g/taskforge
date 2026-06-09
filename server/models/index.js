@@ -1,46 +1,38 @@
-const { Sequelize, DataTypes } = require('sequelize');
+const mongoose = require('mongoose');
+const { Schema } = mongoose;
 
-const sequelize = new Sequelize(process.env.DATABASE_URL || 'sqlite::memory:', {
-  dialect: process.env.DATABASE_URL ? 'postgres' : 'sqlite',
-  dialectOptions: process.env.DATABASE_URL ? { ssl: { require: true, rejectUnauthorized: false } } : {},
-  logging: false
-});
+// ── User ──────────────────────────────────────────────────────────────────────
+const userSchema = new Schema({
+  name:     { type: String, required: true },
+  email:    { type: String, required: true, unique: true, lowercase: true },
+  password: { type: String, required: true },
+  role:     { type: String, enum: ['Admin', 'Member'], default: 'Member' },
+  avatar:   { type: String, default: '??' }
+}, { timestamps: true });
 
-const User = sequelize.define('User', {
-  id:       { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
-  name:     { type: DataTypes.STRING, allowNull: false },
-  email:    { type: DataTypes.STRING, allowNull: false, unique: true },
-  password: { type: DataTypes.STRING, allowNull: false },
-  role:     { type: DataTypes.ENUM('Admin', 'Member'), defaultValue: 'Member' },
-  avatar:   { type: DataTypes.STRING(4), defaultValue: '??' }
-});
+// ── Project ───────────────────────────────────────────────────────────────────
+const projectSchema = new Schema({
+  name:        { type: String, required: true },
+  description: { type: String, default: '' },
+  color:       { type: String, default: '#6366f1' },
+  ownerId:     { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  memberIds:   [{ type: Schema.Types.ObjectId, ref: 'User' }]
+}, { timestamps: true });
 
-const Project = sequelize.define('Project', {
-  id:          { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
-  name:        { type: DataTypes.STRING, allowNull: false },
-  description: { type: DataTypes.TEXT },
-  color:       { type: DataTypes.STRING(10), defaultValue: '#6366f1' },
-  ownerId:     { type: DataTypes.UUID, allowNull: false }
-});
+// ── Task ──────────────────────────────────────────────────────────────────────
+const taskSchema = new Schema({
+  title:       { type: String, required: true },
+  description: { type: String, default: '' },
+  status:      { type: String, enum: ['Todo', 'In Progress', 'Done'], default: 'Todo' },
+  priority:    { type: String, enum: ['High', 'Medium', 'Low'], default: 'Medium' },
+  dueDate:     { type: String },
+  projectId:   { type: Schema.Types.ObjectId, ref: 'Project', required: true },
+  assigneeId:  { type: Schema.Types.ObjectId, ref: 'User' },
+  createdBy:   { type: Schema.Types.ObjectId, ref: 'User' }
+}, { timestamps: true });
 
-const ProjectMember = sequelize.define('ProjectMember', {}, { timestamps: false });
+const User    = mongoose.model('User', userSchema);
+const Project = mongoose.model('Project', projectSchema);
+const Task    = mongoose.model('Task', taskSchema);
 
-const Task = sequelize.define('Task', {
-  id:          { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
-  title:       { type: DataTypes.STRING, allowNull: false },
-  description: { type: DataTypes.TEXT },
-  status:      { type: DataTypes.ENUM('Todo', 'In Progress', 'Done'), defaultValue: 'Todo' },
-  priority:    { type: DataTypes.ENUM('High', 'Medium', 'Low'), defaultValue: 'Medium' },
-  dueDate:     { type: DataTypes.DATEONLY },
-  projectId:   { type: DataTypes.UUID, allowNull: false },
-  assigneeId:  { type: DataTypes.UUID },
-  createdBy:   { type: DataTypes.UUID }
-});
-
-Project.belongsToMany(User, { through: ProjectMember, as: 'members', foreignKey: 'projectId' });
-User.belongsToMany(Project, { through: ProjectMember, as: 'projects', foreignKey: 'userId' });
-Task.belongsTo(Project, { foreignKey: 'projectId' });
-Task.belongsTo(User, { as: 'assignee', foreignKey: 'assigneeId' });
-Project.hasMany(Task, { foreignKey: 'projectId' });
-
-module.exports = { sequelize, User, Project, ProjectMember, Task };
+module.exports = { User, Project, Task };
