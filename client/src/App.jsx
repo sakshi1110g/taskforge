@@ -334,25 +334,12 @@ function ProjectsPage() {
   const COLORS=["#6366f1","#f59e0b","#ef4444","#22c55e","#06b6d4","#ec4899","#8b5cf6"];
   const set = k => e => setForm(f=>({...f,[k]:e.target.value}));
 
-  const [submitErr, setSubmitErr] = useState("");
   const submit = async () => {
-    if (!form.name) { setSubmitErr("Project name is required."); return; }
-    setLoading(true); setSubmitErr("");
+    if (!form.name) return; setLoading(true);
     try {
-      console.log("[Submit] form:", form, "user:", currentUser);
-      await api.createProject({
-        name: form.name,
-        description: form.description || "",
-        color: form.color || "#6366f1",
-        memberIds: form.memberIds || []
-      });
-      await reload();
-      setShowModal(false);
-      setForm({name:"",description:"",memberIds:[],color:"#6366f1"});
-    } catch(e){
-      console.error("[Submit] Error:", e);
-      setSubmitErr(e.message || "Failed to create project. Check console for details.");
-    } finally { setLoading(false); }
+      await api.createProject({...form, memberIds:[currentUser.id,...form.memberIds]});
+      await reload(); setShowModal(false); setForm({name:"",description:"",memberIds:[],color:"#6366f1"});
+    } catch(e){alert(e.message);} finally{setLoading(false);}
   };
 
   const del = async (id,e) => {
@@ -433,7 +420,6 @@ function ProjectsPage() {
                 {form.memberIds.map(id=>{ const u=users.find(u=>(u.id||u._id)===id||String(u._id)===String(id)); return u?(<div key={id} style={{ display:"flex", alignItems:"center", gap:6, background:G.surface, border:`1px solid ${G.border}`, borderRadius:99, padding:"4px 10px 4px 6px" }}><Avatar initials={u.avatar} size={20} /><span style={{fontSize:12,color:G.text}}>{u.name}</span><button onClick={()=>setForm(f=>({...f,memberIds:f.memberIds.filter(i=>i!==id)}))} style={{ background:"none", border:"none", color:G.muted, cursor:"pointer", fontSize:14 }}>×</button></div>):null; })}
               </div>
             )}
-            {submitErr && <p style={{ color:G.danger, fontSize:13, padding:"8px 12px", background:G.danger+"11", borderRadius:8 }}>❌ {submitErr}</p>}
             <div style={{ display:"flex", gap:10, marginTop:4 }}>
               <Btn onClick={submit} disabled={loading}>{loading?"Creating…":"Create Project"}</Btn>
               <Btn variant="ghost" onClick={()=>setShowModal(false)}>Cancel</Btn>

@@ -2,61 +2,36 @@ const router = require('express').Router();
 const auth = require('../middleware/auth');
 const adminOnly = require('../middleware/adminOnly');
 const { Project, Task, User } = require('../models');
-const mongoose = require('mongoose');
 
 // GET /api/projects
 router.get('/', auth, async (req, res) => {
   try {
     let projects;
     if (req.user.role === 'Admin') {
-      projects = await Project.find().populate('memberIds', '_id name email role avatar');
+      projects = await Project.find().populate('memberIds', 'id name email role avatar');
     } else {
-      projects = await Project.find({ memberIds: req.user.id }).populate('memberIds', '_id name email role avatar');
+      projects = await Project.find({ memberIds: req.user.id }).populate('memberIds', 'id name email role avatar');
     }
-    const result = projects.map(p => {
-      const obj = p.toObject();
-      return { ...obj, id: p._id.toString(), members: (obj.memberIds||[]).map(m => ({...m, id: m._id ? m._id.toString() : m})) };
-    });
+    // Attach members array for frontend compatibility
+    const result = projects.map(p => ({
+      ...p.toObject(),
+      id: p._id,
+      members: p.memberIds
+    }));
     res.json(result);
-  } catch (e) { console.error('GET /projects error:', e); res.status(500).json({ error: e.message }); }
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // POST /api/projects
 router.post('/', auth, adminOnly, async (req, res) => {
   try {
-    console.log('POST /projects body:', JSON.stringify(req.body));
-    console.log('User from token:', JSON.stringify(req.user));
-
     const { name, description, color, memberIds } = req.body;
     if (!name) return res.status(400).json({ error: 'Name required' });
-
-    // Only include valid ObjectIds
-    const rawIds = [req.user.id, ...(memberIds || [])];
-    console.log('Raw IDs to validate:', rawIds);
-
-    const safeIds = rawIds.filter(id => {
-      try { return mongoose.Types.ObjectId.isValid(id); }
-      catch { return false; }
-    });
-    console.log('Safe IDs:', safeIds);
-
-    const project = await Project.create({
-      name,
-      description: description || '',
-      color: color || '#6366f1',
-      ownerId: req.user.id,
-      memberIds: safeIds
-    });
-
-    const full = await Project.findById(project._id).populate('memberIds', '_id name email role avatar');
-    const obj = full.toObject();
-    const response = { ...obj, id: full._id.toString(), members: (obj.memberIds||[]).map(m => ({...m, id: m._id.toString()})) };
-    console.log('Project created successfully:', project._id);
-    res.status(201).json(response);
-  } catch (e) {
-    console.error('POST /projects error:', e);
-    res.status(500).json({ error: e.message, stack: e.stack });
-  }
+    const ids = [...new Set([req.user.id, ...(memberIds || [])])];
+    const project = await Project.create({ name, description, color, ownerId: req.user.id, memberIds: ids });
+    const full = await Project.findById(project._id).populate('memberIds', 'id name email role avatar');
+    res.status(201).json({ ...full.toObject(), id: full._id, members: full.memberIds });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // DELETE /api/projects/:id
