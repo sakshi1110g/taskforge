@@ -2,6 +2,7 @@ const router = require('express').Router();
 const auth = require('../middleware/auth');
 const adminOnly = require('../middleware/adminOnly');
 const { Project, Task, User } = require('../models');
+const mongoose = require('mongoose');
 
 // GET /api/projects
 router.get('/', auth, async (req, res) => {
@@ -14,29 +15,48 @@ router.get('/', auth, async (req, res) => {
     }
     const result = projects.map(p => {
       const obj = p.toObject();
-      return { ...obj, id: p._id.toString(), members: obj.memberIds.map(m => ({...m, id: m._id.toString()})) };
+      return { ...obj, id: p._id.toString(), members: (obj.memberIds||[]).map(m => ({...m, id: m._id ? m._id.toString() : m})) };
     });
     res.json(result);
-  } catch (e) { console.error(e); res.status(500).json({ error: e.message }); }
+  } catch (e) { console.error('GET /projects error:', e); res.status(500).json({ error: e.message }); }
 });
 
 // POST /api/projects
 router.post('/', auth, adminOnly, async (req, res) => {
   try {
+    console.log('POST /projects body:', JSON.stringify(req.body));
+    console.log('User from token:', JSON.stringify(req.user));
+
     const { name, description, color, memberIds } = req.body;
     if (!name) return res.status(400).json({ error: 'Name required' });
-    
-    // Combine current user + provided memberIds, filter out invalid ones
-    const rawIds = [req.user.id, ...(memberIds || [])];
-    // Validate all IDs exist in DB
-    const validUsers = await User.find({ _id: { $in: rawIds } }).select('_id');
-    const validIds = validUsers.map(u => u._id);
 
-    const project = await Project.create({ name, description, color, ownerId: req.user.id, memberIds: validIds });
+    // Only include valid ObjectIds
+    const rawIds = [req.user.id, ...(memberIds || [])];
+    console.log('Raw IDs to validate:', rawIds);
+
+    const safeIds = rawIds.filter(id => {
+      try { return mongoose.Types.ObjectId.isValid(id); }
+      catch { return false; }
+    });
+    console.log('Safe IDs:', safeIds);
+
+    const project = await Project.create({
+      name,
+      description: description || '',
+      color: color || '#6366f1',
+      ownerId: req.user.id,
+      memberIds: safeIds
+    });
+
     const full = await Project.findById(project._id).populate('memberIds', '_id name email role avatar');
     const obj = full.toObject();
-    res.status(201).json({ ...obj, id: full._id.toString(), members: obj.memberIds.map(m => ({...m, id: m._id.toString()})) });
-  } catch (e) { console.error(e); res.status(500).json({ error: e.message }); }
+    const response = { ...obj, id: full._id.toString(), members: (obj.memberIds||[]).map(m => ({...m, id: m._id.toString()})) };
+    console.log('Project created successfully:', project._id);
+    res.status(201).json(response);
+  } catch (e) {
+    console.error('POST /projects error:', e);
+    res.status(500).json({ error: e.message, stack: e.stack });
+  }
 });
 
 // DELETE /api/projects/:id
