@@ -697,23 +697,34 @@ export default function App() {
           <Sidebar page={page} setPage={setPage} dark={dark} toggleDark={toggleDark} open={sideOpen} onClose={()=>setSideOpen(false)}/>
 
           {/* Mobile sidebar drawer */}
-          <div className={`sb-drawer${sideOpen?" open":""}`} style={{background:G.surface,borderRight:`1px solid ${G.border}`,padding:"22px 14px",width:240,display:"none"}}>
+          <div className={`sb-drawer${sideOpen?" open":""}`} style={{background:G.surface,borderRight:`1px solid ${G.border}`,padding:"22px 14px",width:240,display:"flex",flexDirection:"column",position:"fixed",top:0,left:0,height:"100vh",zIndex:150,transform:sideOpen?"translateX(0)":"translateX(-100%)",transition:"transform .25s ease"}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:28}}>
               <div style={{display:"flex",alignItems:"center",gap:10}}>
                 <div style={{width:30,height:30,background:`linear-gradient(135deg,${G.accent},#818cf8)`,borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",fontSize:15}}>⚡</div>
                 <span className="syne" style={{fontSize:16,fontWeight:800,color:G.text}}>TaskForge</span>
               </div>
-              <button onClick={()=>setSideOpen(false)} style={{background:"none",border:"none",color:G.muted,cursor:"pointer",fontSize:22}}>×</button>
+              <button onClick={()=>setSideOpen(false)} style={{background:"none",border:"none",color:G.muted,cursor:"pointer",fontSize:24,lineHeight:1}}>×</button>
             </div>
             <nav style={{flex:1,display:"flex",flexDirection:"column",gap:3}}>
               {NAV.map(n=>(
-                <button key={n.id} onClick={()=>{setPage(n.id);setSideOpen(false);}} style={{display:"flex",alignItems:"center",gap:11,padding:"11px 13px",borderRadius:10,border:"none",cursor:"pointer",background:page===n.id?G.accent+"22":"transparent",color:page===n.id?G.accent:G.muted,fontWeight:page===n.id?600:400,fontSize:14,textAlign:"left",width:"100%",transition:"all .15s"}}>
-                  <span style={{fontSize:15}}>{n.icon}</span>{n.label}
+                <button key={n.id} onClick={()=>{setPage(n.id);setSideOpen(false);}} style={{display:"flex",alignItems:"center",gap:11,padding:"12px 13px",borderRadius:10,border:"none",cursor:"pointer",background:page===n.id?G.accent+"22":"transparent",color:page===n.id?G.accent:G.muted,fontWeight:page===n.id?600:400,fontSize:15,textAlign:"left",width:"100%",transition:"all .15s"}}>
+                  <span style={{fontSize:16}}>{n.icon}</span>{n.label}
                 </button>
               ))}
             </nav>
-            <div style={{borderTop:`1px solid ${G.border}`,paddingTop:14,marginTop:20}}>
-              <button onClick={logout} style={{background:"none",border:`1px solid ${G.border}`,borderRadius:8,color:G.muted,fontSize:13,padding:"8px 14px",cursor:"pointer",width:"100%"}}>Sign out</button>
+            <div style={{borderTop:`1px solid ${G.border}`,paddingTop:16,display:"flex",flexDirection:"column",gap:12}}>
+              <div style={{display:"flex",alignItems:"center",gap:10,padding:"4px 4px"}}>
+                <div style={{width:36,height:36,borderRadius:"50%",background:G.accent+"33",border:`2px solid ${G.accent}66`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:700,color:G.accent,flexShrink:0}}>
+                  {currentUser.avatar}
+                </div>
+                <div style={{minWidth:0}}>
+                  <div style={{fontSize:13,fontWeight:600,color:G.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{currentUser.name}</div>
+                  <div style={{fontSize:11,color:G.muted}}>{currentUser.role}</div>
+                </div>
+              </div>
+              <button onClick={()=>{logout();setSideOpen(false);}} style={{background:G.danger+"15",border:`1px solid ${G.danger}44`,borderRadius:9,color:G.danger,fontSize:14,fontWeight:600,padding:"10px 14px",cursor:"pointer",width:"100%",textAlign:"center"}}>
+                Sign out
+              </button>
             </div>
           </div>
 
