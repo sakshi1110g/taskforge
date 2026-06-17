@@ -281,7 +281,7 @@ function Dashboard({setPage,dark,toggleDark}) {
   ];
   return (
     <div className="fade-up page" style={{display:"flex",flexDirection:"column",gap:20}}>
-      <MobTopbar onMenu={()=>{}} dark={dark} toggleDark={toggleDark}/>
+
       <div style={{padding:"0 0"}}>
         <h1 className="syne" style={{fontSize:22,fontWeight:800,marginBottom:3,color:G.text}}>Good day, {currentUser.name.split(" ")[0]} 👋</h1>
         <p style={{color:G.muted,fontSize:13}}>Here's what's happening across your projects.</p>
@@ -380,7 +380,7 @@ function ProjectsPage({dark,toggleDark}) {
   const del=async(id,e)=>{e.stopPropagation();if(!window.confirm("Delete project and all its tasks?"))return;try{await api.deleteProject(id);await reload();}catch(e){alert(e.message);}};
   return (
     <div className="fade-up page">
-      <MobTopbar onMenu={()=>{}} dark={dark} toggleDark={toggleDark}/>
+
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
         <div>
           <h1 className="syne" style={{fontSize:22,fontWeight:800,marginBottom:2,color:G.text}}>Projects</h1>
@@ -541,7 +541,7 @@ function TasksPage({dark,toggleDark}) {
   const FB=({k,v})=>(<button onClick={()=>setFilter(f=>({...f,[k]:v}))} style={{padding:"6px 13px",borderRadius:99,border:`1px solid ${filter[k]===v?G.accent:G.border}`,background:filter[k]===v?G.accent+"22":"transparent",color:filter[k]===v?G.accent:G.muted,fontSize:12,cursor:"pointer",whiteSpace:"nowrap",fontWeight:500,transition:"all .15s",flexShrink:0}}>{v}</button>);
   return (
     <div className="fade-up page">
-      <MobTopbar onMenu={()=>{}} dark={dark} toggleDark={toggleDark}/>
+
       <div style={{marginBottom:18}}>
         <h1 className="syne" style={{fontSize:22,fontWeight:800,marginBottom:3,color:G.text}}>{currentUser.role==="Admin"?"All Tasks":"My Tasks"}</h1>
         <p style={{color:G.muted,fontSize:13}}>{filtered.length} tasks</p>
@@ -591,7 +591,7 @@ function TeamPage({dark,toggleDark}) {
   };
   return (
     <div className="fade-up page">
-      <MobTopbar onMenu={()=>{}} dark={dark} toggleDark={toggleDark}/>
+
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
         <div>
           <h1 className="syne" style={{fontSize:22,fontWeight:800,marginBottom:2,color:G.text}}>Team</h1>
